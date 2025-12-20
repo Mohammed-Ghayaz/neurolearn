@@ -15,7 +15,7 @@ class User(Base):
     name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     password_hash = Column(String, nullable=False)
-    role = Column(SQLAlchemyEnum(UserRole), nullable=False, default=UserRole.STUDENT.value)
+    role = Column(SQLAlchemyEnum(UserRole), nullable=False, default=UserRole.STUDENT)
     age = Column(Integer, nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
