@@ -2,7 +2,7 @@ import jwt
 import os
 from dotenv import load_dotenv
 from uuid import UUID
-from models.user_model import UserRole
+from ..models.user_model import UserRole
 from typing import Any
 from time import time
 
