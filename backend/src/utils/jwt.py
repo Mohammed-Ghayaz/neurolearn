@@ -10,12 +10,15 @@ load_dotenv()
 
 SECRET_KEY = os.getenv("JWT_SECRET")
 
+if not SECRET_KEY:
+    raise ValueError("JWT_SECRET is not set")
+
 
 def create_access_token(user_id: UUID, role: UserRole) -> str:
     payload = {
         "user_id": user_id,
-        "role": role,
-        "exp": time() + 3600 * 24 * 5
+        "role": role.value,
+        "exp": int(time()) + 3600 * 24 * 5
     }
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
