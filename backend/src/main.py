@@ -8,7 +8,7 @@ Base.metadata.create_all(bind=engine)
 
 app.include_router(auth_route.router, prefix="/api/v1/auth")
 app.include_router(user_route.router, prefix="/api/v1/user")
-app.include_router(dummy_route.router)
+app.include_router(dummy_route.router, prefix="/dummy-routes")
 
 @app.get("/")
 def read_root():
