@@ -16,7 +16,7 @@ if not SECRET_KEY:
 
 def create_access_token(user_id: UUID, role: UserRole) -> str:
     payload = {
-        "user_id": user_id,
+        "user_id": str(user_id),
         "role": role.value,
         "exp": int(time()) + 3600 * 24 * 5
     }
