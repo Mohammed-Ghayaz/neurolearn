@@ -1,6 +1,6 @@
 from ..utils.jwt import verify_access_token
 from uuid import UUID
-from ..models.user_model import User
+from ..models.user_model import User, UserRole
 from sqlalchemy.orm import Session
 from ..db.database import get_db
 from fastapi import Depends, HTTPException, Header
@@ -30,3 +30,15 @@ def get_current_user(db: Session = Depends(get_db), jwt_token: str = Depends(get
 
     except ValueError as e:
         raise HTTPException(status_code=401, detail=str(e))
+
+def require_parent(user: User = Depends(get_current_user)):
+    if user.role != UserRole.PARENT:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    return user
+
+def require_student(user: User = Depends(get_current_user)):
+    if user.role != UserRole.STUDENT:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    return user
