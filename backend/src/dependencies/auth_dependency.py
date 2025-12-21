@@ -12,17 +12,21 @@ def get_token_from_header(authorization: str = Header(...)):
     return authorization.split(" ", 1)[1]
 
 def get_current_user(db: Session = Depends(get_db), jwt_token: str = Depends(get_token_from_header)):
-    if not jwt_token:
-        raise HTTPException(status_code=401, detail="Unauthorized user")
+    try:
+        if not jwt_token:
+            raise HTTPException(status_code=401, detail="Unauthorized user")
 
-    payload = verify_access_token(jwt_token)
+        payload = verify_access_token(jwt_token)
 
-    if not payload:
-        raise HTTPException(status_code=401, detail="Unauthorized user")
+        if not payload:
+            raise HTTPException(status_code=401, detail="Unauthorized user")
 
-    user = db.query(User).filter_by(user_id=UUID(payload.user_id)).first()
+        user = db.query(User).filter_by(user_id=UUID(payload["user_id"])).first()
 
-    if not user:
-        raise HTTPException(status_code=401, detail="Unauthorized user")
+        if not user:
+            raise HTTPException(status_code=401, detail="Unauthorized user")
 
-    return user
+        return user
+
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
