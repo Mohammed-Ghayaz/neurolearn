@@ -6,3 +6,7 @@ class RegisterUserRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8)
     age: Optional[int] = Field(None, ge=8, le=18)
+
+class LoginUserRequest(BaseModel):
+    email: EmailStr
+    password: str
