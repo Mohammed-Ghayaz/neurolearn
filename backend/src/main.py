@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 import uvicorn
-from .routes import dummy_route, auth_route, user_route
+from .routes import dummy_route, auth_route, user_route, course_route
 from .db.database import Base, engine
 
 app = FastAPI()
@@ -8,6 +8,8 @@ Base.metadata.create_all(bind=engine)
 
 app.include_router(auth_route.router, prefix="/api/v1/auth")
 app.include_router(user_route.router, prefix="/api/v1/user")
+app.include_router(course_route.router, prefix="/api/v1/learning")
+
 app.include_router(dummy_route.router, prefix="/dummy-routes")
 
 @app.get("/")
