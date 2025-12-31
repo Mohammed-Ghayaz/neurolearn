@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from ..dependencies.auth_dependency import require_student
 from ..models.user_model import User
 from ..models.course_model import Course
 from ..models.topic_model import Topic
 from ..models.subtopic_model import Subtopic
 from ..models.lesson_model import Lesson
+from ..models.lesson_session_model import LessonSession
 from ..db.database import get_db
 from sqlalchemy.orm import Session
 from uuid import UUID
@@ -85,3 +87,19 @@ def get_lesson_content(lesson_id: UUID, db: Session = Depends(get_db), dyslexic_
     return {
         "content": lesson.content
     }
+
+@router.post("/lessons/{lesson_id}/start")
+def create_lesson_session(lesson_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(require_student)):
+    lesson = db.query(Lesson).filter_by(lesson_id=lesson_id, is_active=True).first()
+
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Lesson not found")
+
+    new_session = LessonSession(lesson_id=lesson_id, user_id=current_user.user_id, completed=False)
+    db.add(new_session)
+    db.commit()
+    db.refresh(new_session)
+
+    return JSONResponse(status_code=201, content={
+        "session_id": new_session.session_id
+    })

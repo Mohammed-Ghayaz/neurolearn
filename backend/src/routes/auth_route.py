@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from ..db.database import get_db
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from ..controllers.auth_controller import register_user, login_user
 from ..schema.auth_schema import RegisterUserRequest, LoginUserRequest
 
@@ -10,10 +11,12 @@ router = APIRouter()
 def register_user_router(user_data: RegisterUserRequest, db: Session = Depends(get_db)):
     try:
         jwt_token = register_user(user_data, db)
-        return {
+        content = {
             "access_token": jwt_token,
             "token_type": "bearer"
         }
+
+        return JSONResponse(status_code=201, content=content)
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
