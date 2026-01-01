@@ -99,9 +99,6 @@ def create_lesson_session(lesson_id: UUID, db: Session = Depends(get_db), curren
     if not lesson:
         raise HTTPException(status_code=404, detail="Lesson not found")
 
-    if lesson.user_id != current_user.user_id:
-        raise HTTPException(status_code=403, detail="Forbidden")
-
     new_session = LessonSession(lesson_id=lesson_id, user_id=current_user.user_id, completed=False)
     db.add(new_session)
     db.commit()
