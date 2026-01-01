@@ -1,5 +1,8 @@
+from datetime import timezone, datetime
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
+
+from ..models.mistake_event_model import MistakeEvent
 from ..dependencies.auth_dependency import require_student
 from ..models.user_model import User
 from ..models.course_model import Course
@@ -8,6 +11,7 @@ from ..models.subtopic_model import Subtopic
 from ..models.lesson_model import Lesson
 from ..models.lesson_session_model import LessonSession
 from ..db.database import get_db
+from ..schema.mistake_schema import MistakeEventRequest
 from sqlalchemy.orm import Session
 from uuid import UUID
 from typing import Optional
@@ -95,6 +99,9 @@ def create_lesson_session(lesson_id: UUID, db: Session = Depends(get_db), curren
     if not lesson:
         raise HTTPException(status_code=404, detail="Lesson not found")
 
+    if lesson.user_id != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
     new_session = LessonSession(lesson_id=lesson_id, user_id=current_user.user_id, completed=False)
     db.add(new_session)
     db.commit()
@@ -103,3 +110,47 @@ def create_lesson_session(lesson_id: UUID, db: Session = Depends(get_db), curren
     return JSONResponse(status_code=201, content={
         "session_id": new_session.session_id
     })
+
+@router.post("/mistakes")
+def record_mistake(mistake_event: MistakeEventRequest, db: Session = Depends(get_db), current_user: User = Depends(require_student)):
+    session = db.query(LessonSession).filter_by(session_id = mistake_event.session_id).first()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+
+    if session.user_id != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    if session.ended_at is not None:
+        raise HTTPException(status_code=400, detail="Session already ended")
+
+    lesson = db.query(Lesson).filter_by(lesson_id = session.lesson_id, is_active=True).first()
+
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Associated lesson not found")
+
+    existing_mistake_event = db.query(MistakeEvent).filter_by(session_id=mistake_event.session_id, mistake_type=mistake_event.mistake_type, context=mistake_event.context, user_id=current_user.user_id).order_by(MistakeEvent.created_at.desc()).first()
+
+    if existing_mistake_event:
+        time_difference = datetime.now(timezone.utc) - existing_mistake_event.created_at
+        time_diff_in_sec = time_difference.total_seconds()
+
+        if time_diff_in_sec < 2:
+            raise HTTPException(status_code=409, detail="Conflicting resource")
+
+    new_mistake_event = MistakeEvent(
+        session_id=mistake_event.session_id, 
+        lesson_id=session.lesson_id,
+        subtopic_id=lesson.subtopic_id,
+        user_id=current_user.user_id,
+        mistake_type=mistake_event.mistake_type,
+        context=mistake_event.context
+        )
+
+    db.add(new_mistake_event)
+    db.commit()
+    db.refresh(new_mistake_event)
+
+    return JSONResponse(status_code=201, content={"status": "mistake recorded"})
+
