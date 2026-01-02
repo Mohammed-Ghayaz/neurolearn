@@ -12,6 +12,7 @@ from ..models.lesson_model import Lesson
 from ..models.lesson_session_model import LessonSession
 from ..db.database import get_db
 from ..schema.mistake_schema import MistakeEventRequest
+from ..schema.progress_request_schema import ProgressRequest
 from sqlalchemy.orm import Session
 from uuid import UUID
 from typing import Optional
@@ -160,3 +161,31 @@ def record_mistake(mistake_event: MistakeEventRequest, db: Session = Depends(get
 
     return JSONResponse(status_code=201, content={"status": "mistake recorded"})
 
+
+@router.patch("/lessons/{lesson_id}/progress")
+def track_session_progress(lesson_id: UUID, progress: ProgressRequest, db: Session=Depends(get_db), current_user: User = Depends(require_student)):
+    session = db.query(LessonSession).filter_by(session_id=progress.session_id).first()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="No active session found")
+
+    if lesson_id != session.lesson_id:
+        raise HTTPException(status_code=400, detail="Bad Request")
+
+    if session.user_id != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    if session.ended_at is not None:
+        raise HTTPException(status_code=400, detail="Session already ended")
+
+    if progress.progress_percent <= session.progress_percent:
+        return {"progress_status": "updated"}
+
+    progress_percent = 100 if progress.progress_percent >= 100 else progress.progress_percent
+
+    session.progress_percent = progress_percent
+    db.commit()
+
+    return {"progress_status": "updated"}
+
+    

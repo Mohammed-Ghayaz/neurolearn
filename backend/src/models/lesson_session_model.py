@@ -12,5 +12,5 @@ class LessonSession(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id"), index=True, nullable=False)
     started_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
     ended_at = Column(DateTime(timezone=True), nullable=True)
-    progress_percent = Column(Float, nullable=False, default=0)
+    progress_percent = Column(Float, nullable=False)
     completed = Column(Boolean, default=False)
