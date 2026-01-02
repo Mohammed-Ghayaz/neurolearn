@@ -99,6 +99,15 @@ def create_lesson_session(lesson_id: UUID, db: Session = Depends(get_db), curren
     if not lesson:
         raise HTTPException(status_code=404, detail="Lesson not found")
 
+    existing_lesson_session = db.query(LessonSession).filter_by(
+        lesson_id=lesson_id, 
+        user_id=current_user.user_id,
+        ended_at=None
+        ).first()
+
+    if existing_lesson_session:
+        return JSONResponse(status_code=200, content={"session_id": existing_lesson_session.session_id})
+
     new_session = LessonSession(lesson_id=lesson_id, user_id=current_user.user_id, completed=False)
     db.add(new_session)
     db.commit()
