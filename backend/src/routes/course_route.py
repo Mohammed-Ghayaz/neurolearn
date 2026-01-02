@@ -188,4 +188,23 @@ def track_session_progress(lesson_id: UUID, progress: ProgressRequest, db: Sessi
 
     return {"progress_status": "updated"}
 
-    
+@router.patch("/lessons/{lesson_id}/end")
+def end_lesson(lesson_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(require_student)):
+    session = db.query(LessonSession).filter_by(lesson_id=lesson_id, user_id=current_user.user_id).order_by(LessonSession.created_at.desc()).first()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    if session.ended_at is not None:
+        return {"lesson_status": "ended"}
+
+    if session.progress_percent <= 0:
+        raise HTTPException(status_code=400, detail="Bad Request")
+
+    session.ended_at = datetime.now(timezone.utc)
+    session.completed = session.progress_percent >= 90
+
+    db.commit()
+
+    return {"lesson_status": "ended"}
+
